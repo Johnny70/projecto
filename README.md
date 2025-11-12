@@ -1,4 +1,4 @@
-# Projecto – Svelte Trello-like Board
+# Projecto – Svelte Task Board with Swimlanes
 
 A clean, modern project management board built with SvelteKit. Features swimlanes, draggable tasks, modals for editing, and persistent localStorage data. Ready for GitHub!
 
@@ -50,4 +50,4 @@ Pull requests and issues are welcome!
 
 ## License
 
-MIT
+GPL-3.0
