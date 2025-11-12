@@ -1,0 +1,33 @@
+node_modules/
+
+# SvelteKit build
+.build/
+.svelte-kit/
+
+# Vite
+dist/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/build
