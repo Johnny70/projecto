@@ -3,24 +3,19 @@
     const lanes = [
         {
             id: 1,
-            title: "Att göra",
-            tasks: [
-                { id: 1, title: "Skapa projektstruktur" },
-                { id: 2, title: "Designa UI" },
-            ],
+            title: "To Do",
+            tasks: [{ id: 1, title: "This is a task, click me" }],
         },
-        {
-            id: 2,
-            title: "Pågår",
-            tasks: [{ id: 3, title: "Implementera Board-komponent" }],
-        },
-        {
-            id: 3,
-            title: "Klart",
-            tasks: [{ id: 4, title: "Skapa Task-komponent" }],
-        },
+        { id: 2, title: "In Progress", tasks: [] },
+        { id: 3, title: "Blocked", tasks: [] },
+        { id: 4, title: "Ready for Deployment", tasks: [] },
+        { id: 5, title: "Done", tasks: [] },
     ];
 </script>
 
-<h1>Projektboard</h1>
+<img
+    src="/logo.png"
+    alt="Projecto logo"
+    style="width: 180px; height: auto; display: block;"
+/>
 <Board {lanes} />

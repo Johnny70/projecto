@@ -1,15 +1,30 @@
 <script lang="ts">
+    // --- Board state och utility-funktioner ---
+    function resetBoard() {
+        if (
+            confirm(
+                "Are you sure you want to reset the board? All lanes and tasks will be deleted."
+            )
+        ) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+    // --- UI state ---
     let showSettings = false;
+    // --- Komponenter ---
     import Swimlane from "./Swimlane.svelte";
+    // --- Typer ---
     type Task = { id: number; title: string };
     type Lane = { id: number; title: string; tasks: Task[] };
 
+    // --- Props ---
     export let lanes: Lane[] = [];
 
-    // LocalStorage key
+    // --- LocalStorage key ---
     const STORAGE_KEY = "projecto-board";
 
-    // Read from localStorage if available
+    // --- Läs board från localStorage om det finns ---
     function loadBoard(): Lane[] {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
@@ -22,12 +37,12 @@
 
     let boardLanes: Lane[] = loadBoard();
 
-    // Save to localStorage
+    // --- Spara board till localStorage ---
     function saveBoard() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(boardLanes));
     }
 
-    // For creating a new lane
+    // --- Hantering av lanes ---
     let newLaneTitle = "";
 
     function addLane() {
@@ -63,7 +78,7 @@
         }
     }
 
-    // Edit lane modal state
+    // --- Lane edit modal state ---
     let editingLane: Lane | null = null;
     let editingLaneTitle = "";
     function openEditLane(lane: Lane) {
@@ -85,7 +100,7 @@
         }
     }
 
-    // Move task between lanes
+    // --- Flytta task mellan lanes ---
     function handleMoveTask(
         e: CustomEvent<{ taskId: number; fromLaneId: number; toLaneId: number }>
     ) {
@@ -103,7 +118,7 @@
         saveBoard();
     }
 
-    // Add task modal state and handler
+    // --- Add task modal state och handler ---
     let showAddTask = false;
     let newTaskTitle = "";
     let newTaskLaneId: number | null = null;
@@ -117,20 +132,45 @@
         }
     }
 
-    // Task details modal state
+    // --- Task details modal state ---
     let showTaskDetails = false;
     let selectedTask: Task | null = null;
     let selectedLaneId: number | null = null;
+    let editingTaskTitle = "";
 
     function openTaskDetails(task: Task, laneId: number) {
         selectedTask = task;
         selectedLaneId = laneId;
+        editingTaskTitle = task.title;
         showTaskDetails = true;
     }
     function closeTaskDetails() {
         showTaskDetails = false;
         selectedTask = null;
         selectedLaneId = null;
+        editingTaskTitle = "";
+    }
+    function saveTaskEdit() {
+        if (
+            selectedTask &&
+            selectedLaneId !== null &&
+            editingTaskTitle.trim()
+        ) {
+            const lane = boardLanes.find((l) => l.id === selectedLaneId);
+            if (lane) {
+                lane.tasks = lane.tasks.map((t) =>
+                    t.id === selectedTask!.id
+                        ? { ...t, title: editingTaskTitle.trim() }
+                        : t
+                );
+                boardLanes = boardLanes.map((l) => ({
+                    ...l,
+                    tasks: [...l.tasks],
+                }));
+                saveBoard();
+                closeTaskDetails();
+            }
+        }
     }
     function removeTask(laneId: number, taskId: number) {
         const lane = boardLanes.find((l) => l.id === laneId);
@@ -143,68 +183,6 @@
     }
 </script>
 
-<div class="board-toolbar">
-    <button
-        class="add-task-btn"
-        type="button"
-        aria-label="Skapa ny task"
-        on:click={() => (showAddTask = true)}
-    >
-        <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="#1976d2"
-                stroke-width="2"
-                fill="none"
-            />
-            <path
-                d="M12 8V16M8 12H16"
-                stroke="#1976d2"
-                stroke-width="2"
-                stroke-linecap="round"
-            />
-        </svg>
-    </button>
-    <button
-        class="settings-btn"
-        type="button"
-        aria-label="Inställningar"
-        on:click={() => (showSettings = true)}
-    >
-        <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="#555"
-                stroke-width="2"
-                fill="none"
-            />
-            <path
-                d="M12 8V12L14 14"
-                stroke="#555"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-            />
-        </svg>
-    </button>
-</div>
-
 {#if showAddTask}
     <div
         class="modal-overlay"
@@ -214,13 +192,7 @@
         on:click={() => (showAddTask = false)}
         on:keydown={(e) => e.key === "Escape" && (showAddTask = false)}
     >
-        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-        <div
-            class="modal"
-            role="document"
-            on:click|stopPropagation
-            on:keydown={(e) => e.key === "Enter" && e.stopPropagation()}
-        >
+        <div class="modal" role="document">
             <h3>Skapa ny task</h3>
             <form
                 on:submit|preventDefault={handleAddTask}
@@ -245,6 +217,19 @@
                     >Stäng</button
                 >
             </div>
+            <button
+                class="reset-board-btn modal-margin-left"
+                type="button"
+                aria-label="Reset board"
+                on:click={resetBoard}
+            >
+                <span
+                    class="material-icons"
+                    style="font-size: 20px; color: #d32f2f; vertical-align: middle;"
+                    >delete_forever</span
+                >
+                Reset Board
+            </button>
         </div>
     </div>
 {/if}
@@ -268,147 +253,196 @@
                 />
                 <button type="submit">Lägg till lane</button>
             </form>
-            <div class="modal-actions">
-                <button type="button" on:click={() => (showSettings = false)}
-                    >Stäng</button
+            <div
+                style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.5rem;"
+            >
+                <button
+                    type="button"
+                    class="reset-board-btn modal-danger-btn"
+                    on:click={resetBoard}
                 >
+                    <span class="material-icons danger-icon"
+                        >delete_forever</span
+                    >
+                    Återställ board
+                </button>
+                <button type="button" on:click={() => (showSettings = false)}>
+                    Stäng
+                </button>
             </div>
         </div>
     </div>
 {/if}
 
 <div class="board">
-    {#each boardLanes as lane (lane.id)}
-        <div class="lane-wrapper">
-            <div class="lane-header">
-                <span class="lane-title">{lane.title}</span>
-                <button
-                    class="edit-lane-btn"
-                    type="button"
-                    aria-label="Redigera lane"
-                    on:click={() => openEditLane(lane)}
-                >
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
+    <div class="board-actions">
+        <button
+            class="add-task-btn"
+            type="button"
+            aria-label="Skapa ny task"
+            on:click={() => (showAddTask = true)}
+        >
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#1976d2"
+                    stroke-width="2"
+                    fill="none"
+                />
+                <path
+                    d="M12 8V16M8 12H16"
+                    stroke="#1976d2"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                />
+            </svg>
+        </button>
+        <button
+            class="settings-btn"
+            type="button"
+            aria-label="Inställningar"
+            on:click={() => (showSettings = true)}
+        >
+            <span class="material-icons" style="font-size: 24px; color: #555;"
+                >settings</span
+            >
+        </button>
+    </div>
+    <div class="board-inner">
+        {#each boardLanes as lane (lane.id)}
+            <div class="lane-wrapper">
+                <div class="lane-header">
+                    <span class="lane-title">{lane.title}</span>
+                    <button
+                        class="edit-lane-btn"
+                        type="button"
+                        aria-label="Redigera lane"
+                        on:click={() => openEditLane(lane)}
                     >
-                        <circle
-                            cx="10"
-                            cy="10"
-                            r="8"
-                            stroke="#555"
-                            stroke-width="1.5"
-                            fill="none"
-                        />
-                        <path
-                            d="M10 6V10L12 12"
-                            stroke="#555"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
-                </button>
-            </div>
-            <Swimlane
-                {lane}
-                on:addTask={(e) => addTask(lane.id, e.detail.title)}
-                on:moveTask={handleMoveTask}
-                on:taskClick={(e) => openTaskDetails(e.detail.task, lane.id)}
-            />
-            {#if showTaskDetails && selectedTask}
-                <div
-                    class="modal-overlay"
-                    role="dialog"
-                    aria-modal="true"
-                    tabindex="0"
-                    on:click={closeTaskDetails}
-                    on:keydown={(e) => e.key === "Escape" && closeTaskDetails()}
-                >
-                    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                        <span
+                            class="material-icons"
+                            style="font-size: 20px; color: #555;">settings</span
+                        >
+                    </button>
+                </div>
+                <Swimlane
+                    {lane}
+                    on:addTask={(e) => addTask(lane.id, e.detail.title)}
+                    on:moveTask={handleMoveTask}
+                    on:taskClick={(e) =>
+                        openTaskDetails(e.detail.task, lane.id)}
+                />
+                {#if showTaskDetails && selectedTask}
                     <div
-                        class="modal"
-                        role="document"
-                        on:click|stopPropagation
+                        class="modal-overlay"
+                        role="dialog"
+                        aria-modal="true"
+                        tabindex="0"
+                        on:click={closeTaskDetails}
                         on:keydown={(e) =>
-                            e.key === "Enter" && e.stopPropagation()}
+                            e.key === "Escape" && closeTaskDetails()}
                     >
-                        <h3>Task detaljer</h3>
-                        <div style="margin-bottom: 1rem;">
-                            <strong>Titel:</strong>
-                            {selectedTask.title}
-                        </div>
-                        <div class="modal-actions">
-                            <button type="button" on:click={closeTaskDetails}
-                                >Stäng</button
+                        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                        <div
+                            class="modal"
+                            role="document"
+                            on:click|stopPropagation
+                            on:keydown={(e) =>
+                                e.key === "Enter" && e.stopPropagation()}
+                        >
+                            <h3>Edit Task</h3>
+                            <form
+                                on:submit|preventDefault={saveTaskEdit}
+                                style="margin-bottom: 1rem;"
                             >
-                            {#if selectedLaneId !== null && selectedTask}
+                                <label for="edit-task-title"
+                                    ><strong>Title:</strong></label
+                                >
+                                <input
+                                    id="edit-task-title"
+                                    type="text"
+                                    bind:value={editingTaskTitle}
+                                    required
+                                />
+                            </form>
+                            <div class="modal-actions">
+                                <button type="button" on:click={saveTaskEdit}
+                                    >Save</button
+                                >
                                 <button
                                     type="button"
-                                    class="remove-task"
-                                    on:click={() =>
-                                        removeTask(
-                                            selectedLaneId!,
-                                            selectedTask!.id
-                                        )}>Ta bort</button
+                                    on:click={closeTaskDetails}>Close</button
                                 >
-                            {/if}
+                                {#if selectedLaneId !== null && selectedTask}
+                                    <button
+                                        class="remove-task"
+                                        type="button"
+                                        on:click={() =>
+                                            removeTask(
+                                                selectedLaneId!,
+                                                selectedTask!.id
+                                            )}>Delete</button
+                                    >
+                                {/if}
+                            </div>
                         </div>
                     </div>
-                </div>
-            {/if}
-            <!-- Remove button is moved to the settings modal -->
-        </div>
-    {/each}
+                {/if}
+            </div>
+        {/each}
 
-    {#if editingLane}
-        <div
-            class="modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            tabindex="0"
-            on:click={closeEditLane}
-            on:keydown={(e) => e.key === "Escape" && closeEditLane()}
-        >
-            <div class="modal" role="document">
-                <h3>Redigera lane</h3>
-                <input
-                    type="text"
-                    bind:value={editingLaneTitle}
-                    aria-label="Lane titel"
-                />
-                <div class="modal-actions">
-                    <button type="button" on:click={saveEditLane}>Spara</button>
-                    <button type="button" on:click={closeEditLane}
-                        >Avbryt</button
-                    >
-                    <button
-                        type="button"
-                        class="remove-lane"
-                        on:click={() => {
-                            if (editingLane !== null) {
-                                removeLane(editingLane.id);
-                                closeEditLane();
-                            }
-                        }}>Ta bort lane</button
-                    >
+        {#if editingLane}
+            <div
+                class="modal-overlay"
+                role="dialog"
+                aria-modal="true"
+                tabindex="0"
+                on:click={closeEditLane}
+                on:keydown={(e) => e.key === "Escape" && closeEditLane()}
+            >
+                <div class="modal" role="document">
+                    <h3>Redigera lane</h3>
+                    <input
+                        type="text"
+                        bind:value={editingLaneTitle}
+                        aria-label="Lane titel"
+                    />
+                    <div class="modal-actions">
+                        <button type="button" on:click={saveEditLane}
+                            >Spara</button
+                        >
+                        <button type="button" on:click={closeEditLane}
+                            >Avbryt</button
+                        >
+                        <button
+                            type="button"
+                            class="remove-lane"
+                            on:click={() => {
+                                if (editingLane !== null) {
+                                    removeLane(editingLane.id);
+                                    closeEditLane();
+                                }
+                            }}>Ta bort lane</button
+                        >
+                    </div>
                 </div>
             </div>
-        </div>
-    {/if}
+        {/if}
+    </div>
 </div>
 
 <style>
-    .board-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        padding: 1rem 1rem 0 1rem;
-        box-sizing: border-box;
+    @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+    :global(body) {
+        font-family: Calibri, Arial, Helvetica, sans-serif;
     }
     .add-task-btn {
         background: none;
@@ -418,30 +452,40 @@
         display: flex;
         align-items: center;
     }
-    .add-task-btn svg {
-        display: block;
-    }
+
     .board {
         display: flex;
-        gap: 1rem;
-        padding: 1rem;
+        flex: 1;
+        min-height: 0;
         background: #f4f4f4;
-        min-height: 60vh;
         position: relative;
+        overflow-y: auto;
     }
-    .settings-btn {
-        position: absolute;
-        top: 1rem;
+    .board-actions {
+        position: fixed;
+        top: 0.5rem;
         right: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        z-index: 100;
+    }
+    .board-inner {
+        width: 100%;
+        padding: 0;
+        box-sizing: border-box;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .settings-btn {
         background: none;
         border: none;
         cursor: pointer;
         padding: 0.2rem;
-        z-index: 10;
+        display: flex;
+        align-items: center;
     }
-    .settings-btn svg {
-        display: block;
-    }
+
     .add-lane-form {
         display: flex;
         gap: 0.5rem;
@@ -485,9 +529,6 @@
         padding: 0.1rem;
         display: flex;
         align-items: center;
-    }
-    .edit-lane-btn svg {
-        display: block;
     }
     .modal-overlay {
         position: fixed;
