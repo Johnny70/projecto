@@ -192,7 +192,7 @@
         on:click={() => (showAddTask = false)}
         on:keydown={(e) => e.key === "Escape" && (showAddTask = false)}
     >
-        <div class="modal" role="document">
+        <div class="modal" role="document" on:click|stopPropagation>
             <h3>Skapa ny task</h3>
             <form
                 on:submit|preventDefault={handleAddTask}
