@@ -192,7 +192,7 @@
         on:click={() => (showAddTask = false)}
         on:keydown={(e) => e.key === "Escape" && (showAddTask = false)}
     >
-        <div class="modal" role="document" on:click|stopPropagation>
+        <div class="modal" role="document">
             <h3>Skapa ny task</h3>
             <form
                 on:submit|preventDefault={handleAddTask}
@@ -460,6 +460,7 @@
         background: #f4f4f4;
         position: relative;
         overflow-y: auto;
+        min-height: 0;
     }
     .board-actions {
         position: fixed;

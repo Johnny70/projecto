@@ -11,3 +11,5 @@
 <main style="height: 100vh; display: flex; flex-direction: column;">
     {@render children()}
 </main>
+
+<style></style>
