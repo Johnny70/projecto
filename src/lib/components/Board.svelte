@@ -349,12 +349,16 @@
             <div
                 class="lane-wrapper"
                 role="listitem"
-                draggable="true"
-                on:dragstart={() => handleLaneDragStart(lane.id)}
-                on:dragover={handleLaneDragOver}
+                on:dragover|preventDefault={handleLaneDragOver}
                 on:drop={() => handleLaneDrop(lane.id)}
             >
-                <div class="lane-header">
+                <div
+                    class="lane-header"
+                    role="button"
+                    tabindex="0"
+                    draggable="true"
+                    on:dragstart={() => handleLaneDragStart(lane.id)}
+                >
                     <span class="lane-title">{lane.title}</span>
                     <button
                         class="edit-lane-btn"
