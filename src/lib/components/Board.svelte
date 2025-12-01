@@ -118,6 +118,30 @@
         saveBoard();
     }
 
+    // --- Drag & drop för lanes ---
+    let draggedLaneId: number | null = null;
+
+    function handleLaneDragStart(laneId: number) {
+        draggedLaneId = laneId;
+    }
+
+    function handleLaneDragOver(event: DragEvent) {
+        event.preventDefault();
+    }
+
+    function handleLaneDrop(targetLaneId: number) {
+        if (draggedLaneId === null || draggedLaneId === targetLaneId) return;
+        const fromIndex = boardLanes.findIndex((l) => l.id === draggedLaneId);
+        const toIndex = boardLanes.findIndex((l) => l.id === targetLaneId);
+        if (fromIndex === -1 || toIndex === -1) return;
+        const updated = [...boardLanes];
+        const [moved] = updated.splice(fromIndex, 1);
+        updated.splice(toIndex, 0, moved);
+        boardLanes = updated;
+        draggedLaneId = null;
+        saveBoard();
+    }
+
     // --- Add task modal state och handler ---
     let showAddTask = false;
     let newTaskTitle = "";
@@ -192,7 +216,9 @@
         on:click={() => (showAddTask = false)}
         on:keydown={(e) => e.key === "Escape" && (showAddTask = false)}
     >
-        <div class="modal" role="document">
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <div class="modal" role="document" on:click|stopPropagation>
             <h3>Skapa ny task</h3>
             <form
                 on:submit|preventDefault={handleAddTask}
@@ -243,7 +269,9 @@
         on:click={() => (showSettings = false)}
         on:keydown={(e) => e.key === "Escape" && (showSettings = false)}
     >
-        <div class="modal" role="document">
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <div class="modal" role="document" on:click|stopPropagation>
             <h3>Inställningar</h3>
             <form class="add-lane-form" on:submit|preventDefault={addLane}>
                 <input
@@ -318,7 +346,14 @@
     </div>
     <div class="board-inner">
         {#each boardLanes as lane (lane.id)}
-            <div class="lane-wrapper">
+            <div
+                class="lane-wrapper"
+                role="listitem"
+                draggable="true"
+                on:dragstart={() => handleLaneDragStart(lane.id)}
+                on:dragover={handleLaneDragOver}
+                on:drop={() => handleLaneDrop(lane.id)}
+            >
                 <div class="lane-header">
                     <span class="lane-title">{lane.title}</span>
                     <button
@@ -351,6 +386,7 @@
                             e.key === "Escape" && closeTaskDetails()}
                     >
                         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
                         <div
                             class="modal"
                             role="document"
@@ -408,7 +444,9 @@
                 on:click={closeEditLane}
                 on:keydown={(e) => e.key === "Escape" && closeEditLane()}
             >
-                <div class="modal" role="document">
+                <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <div class="modal" role="document" on:click|stopPropagation>
                     <h3>Redigera lane</h3>
                     <input
                         type="text"
